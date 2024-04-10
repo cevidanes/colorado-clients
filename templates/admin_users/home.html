@@ -1,0 +1,63 @@
+{% extends '/admin_users/base.html' %}
+
+{% block title %}Users Dashboard{% endblock %}
+
+{% block content %}
+<div class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card data-tables">
+                    <div class="card-body table-striped table-no-bordered table-hover dataTable dtr-inline table-full-width">
+                        <div class="toolbar">
+                            <!--        Here you can write extra buttons/actions for the toolbar              -->
+                        </div>
+                        <div class="fresh-datatables">
+                            <table id="datatables" class="table table-striped table-no-bordered table-hover" cellspacing="0" width="100%" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th class="disabled-sorting text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rows will be added dynamically here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+
+{% endblock %}
+{% block scripts %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Fetch users data
+        $.getJSON('/users', function(users) {
+            var tableBody = $('#datatables tbody');
+            users.forEach(function(user) {
+                var row = $('<tr>');
+                row.append($('<td>').text(user.id));
+                row.append($('<td>').text(user.username));
+                row.append($('<td>').text(user.email));
+                row.append($('<td class="text-right">').html('<a href="#" class="btn btn-link btn-info like"><i class="fa fa-heart"></i></a>' +
+                                                              '<a href="#" class="btn btn-link btn-warning edit"><i class="fa fa-edit"></i></a>' +
+                                                              '<a href="#" class="btn btn-link btn-danger remove"><i class="fa fa-times"></i></a>'));
+                tableBody.append(row);
+            });
+    
+            // Initialize DataTables now that the table is populated
+            $('#datatables').DataTable();
+        });
+    });
+    </script>
+{% endblock %}

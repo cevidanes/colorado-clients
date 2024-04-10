@@ -1,0 +1,93 @@
+<!-- templates/register.html -->
+{% extends "/authentication/base.html" %}
+
+{% block title %}Efetuar Login{% endblock %}
+
+{% block content %}
+    <div class="wrapper wrapper-full-page">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-transparent navbar-absolute">
+        <div class="container">
+            <div class="navbar-wrapper">
+                <a class="navbar-brand" href="#pablo">Colorado Clientes</a>
+                <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" aria-controls="navigation-index" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-bar burger-lines"></span>
+                    <span class="navbar-toggler-bar burger-lines"></span>
+                    <span class="navbar-toggler-bar burger-lines"></span>
+                </button>
+            </div>
+            <div class="collapse navbar-collapse justify-content-end" id="navbar">
+                <ul class="navbar-nav">
+                    <li class="nav-item  active ">
+                        <a href="{{ url_for('auth.register') }}" class="nav-link">
+                            <i class="nc-icon nc-badge"></i> Cadastrar
+                        </a>
+                    </li>
+                    <li class="nav-item ">
+                        <a href="{{ url_for('auth.login') }}" class="nav-link">
+                            <i class="nc-icon nc-mobile"></i> LogIn
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!-- End Navbar -->
+        <div class="full-page  section-image" data-color="red" data-image="{{ url_for('static', filename='/img/bg5.jpg') }}">
+            <!--   you can change the color of the filter page using: data-color="blue | purple | green | orange | red | rose " -->
+            <div class="content">
+                <div class="container">
+                    <div class="col-md-4 col-sm-6 ml-auto mr-auto">
+                        <form class="form" method="post">
+                            {{ form.hidden_tag() }}
+                            <div class="card card-login ">
+                                <div class="card-header ">
+                                    <h3 class="header text-center">Login</h3>
+                                </div>
+                                <div class="card-body ">
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            {{ form.username.label(class="form-control-label") }}
+                                            {{ form.username(class="form-control", placeholder="Informe o Usuário") }}
+                                            {% if form.username.errors %}
+                                                {% for error in form.username.errors %}
+                                                    <div class="alert alert-danger">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                        <div class="form-group">
+                                            {{ form.password.label(class="form-control-label") }}
+                                            {{ form.password(class="form-control", placeholder="Informe a Senha") }}
+                                            {% if form.password.errors %}
+                                                {% for error in form.password.errors %}
+                                                    <div class="alert alert-danger">{{ error }}</div>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                        <div class="form-group">
+                                            <div class="form-check">
+     
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer ml-auto mr-auto">
+                                    {{ form.submit(class="btn btn-warning btn-wd") }}
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="footer">
+            <div class="container">
+                <nav>
+                    <ul class="footer-menu">
+                        
+                    </ul>
+                </nav>
+            </div>
+        </footer>
+    </div>
+{% endblock %}

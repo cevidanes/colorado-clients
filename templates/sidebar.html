@@ -1,0 +1,90 @@
+<!-- Sidebar content here -->
+<div class="sidebar" data-color="red" data-image="../../assets/img/sidebar-5.jpg">
+    <!--
+Tip 1: You can change the color of the sidebar using: data-color="purple | blue | green | orange | red"
+
+Tip 2: you can also add an image using data-image tag
+-->
+    <div class="sidebar-wrapper">
+        <div class="logo">
+            <a href="#" class="simple-text logo-mini">
+                 
+            </a>
+            <div class="photo">
+                <img src="https://coloradoempreendimentos.com/wp-content/uploads/2022/01/logo-2.svg" />
+            </div>
+        </div>
+        <div class="user">
+            <div class="info">
+                <a data-toggle="collapse" href="#collapseExample" class="collapsed">
+                    <span>{{ current_user.username }}
+                        <b class="caret"></b>
+                    </span>
+                </a>
+                <div class="collapse" id="collapseExample">
+                    <ul class="nav">
+                        <li>
+                            <a class="profile-dropdown" href="#pablo">
+                                <span class="sidebar-mini">MP</span>
+                                <span class="sidebar-normal">Meu Perfil</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="profile-dropdown" href="#pablo">
+                                <span class="sidebar-mini">EP</span>
+                                <span class="sidebar-normal">Editar Perfil</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <ul class="nav">
+            <li class="nav-item ">
+                <a class="nav-link" href="#">
+                    <i class="nc-icon nc-chart-pie-35"></i>
+                    <p>Dashboard</p>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="collapse" href="#formsExamples">
+                    <i class="nc-icon nc-notes"></i>
+                    <p>
+                        Usuários
+                        <b class="caret"></b>
+                    </p>
+                </a>
+                <div class="collapse " id="formsExamples">
+                    <ul class="nav">
+                        <li class="nav-item ">
+                            <a class="nav-link" href="{{ url_for('admin_users.home') }}">
+                                <span class="sidebar-mini"></span>
+                                <span class="sidebar-normal">Administrar</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-toggle="collapse" href="#tablesExamples">
+                    <i class="nc-icon nc-paper-2"></i>
+                    <p>
+                        Contratos
+                        <b class="caret"></b>
+                    </p>
+                </a>
+                <div class="collapse show" id="tablesExamples">
+                    <ul class="nav">
+                        <li class="nav-item ">
+                            <a class="nav-link" href="#">
+                                <span class="sidebar-normal">Gerenciar</span>
+                            </a>
+                        </li>
+                   
+                    </ul>
+                </div>
+            </li>
+
+        </ul>
+    </div>
+</div>
