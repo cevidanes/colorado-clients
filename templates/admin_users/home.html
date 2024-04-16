@@ -34,15 +34,51 @@
     </div>
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1" role="dialog" aria-labelledby="editUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="editUserForm">
+            <div class="form-group">
+              <label for="userId">User ID</label>
+              <input type="text" class="form-control" id="userId" name="userId" readonly>
+            </div>
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input type="text" class="form-control" id="username" name="username">
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" class="form-control" id="email" name="email">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary" id="saveChanges">Save changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
 
 {% endblock %}
 {% block scripts %}
 <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.22/datatables.min.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
 <script>
+    // Start for DataTables Script User.
     $(document).ready(function() {
         // Fetch users data
-        $.getJSON('/users', function(users) {
+        $.getJSON('/admin_users/users', function(users) {
             var tableBody = $('#datatables tbody');
             users.forEach(function(user) {
                 var row = $('<tr>');
@@ -59,5 +95,107 @@
             $('#datatables').DataTable();
         });
     });
-    </script>
+    
+    // After DataTables initialization
+    $('#datatables').on('click', '.edit', function() {
+        var userId = $(this).closest('tr').find('td:nth-child(1)').text();
+        var username = $(this).closest('tr').find('td:nth-child(2)').text();
+        var email = $(this).closest('tr').find('td:nth-child(3)').text();
+
+        // Fill the form in the modal
+        $('#editUserModal #userId').val(userId);
+        $('#editUserModal #username').val(username);
+        $('#editUserModal #email').val(email);
+
+        // Show the modal
+        $('#editUserModal').modal('show');
+    });
+
+    //Save changes for User Changes when confirmation is clicked.
+    $('#saveChanges').click(function() {
+    var formData = {
+        username: $('#editUserModal #username').val(),
+        email: $('#editUserModal #email').val()
+    };
+
+    var userId = $('#editUserModal #userId').val();
+
+    $.ajax({
+            url: '/admin_users/users/' + userId,  // Using the user ID in the route
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                // Check the success flag in response
+                if(response.success) {
+                    // Close the modal
+                    $('#editUserModal').modal('hide');
+
+                    // Show success alert with the message from the server
+                    swal("Success", response.message, "success").then((value) => {
+                        location.reload();  // Reload the page or DataTable to reflect changes
+                    });
+                } else {
+                    // Handle the case where success is false but the request completed
+                    swal("Failed", response.message, "error");
+                }
+            },
+            error: function(xhr, status, error) {
+                // Handle HTTP error response
+                var errorMessage = xhr.status + ': ' + xhr.statusText
+                var response = xhr.responseJSON;
+                if (response && response.message) {
+                    errorMessage = response.message;
+                }
+
+                swal("Error", errorMessage, "error");
+            }
+        });
+    });
+
+    //Start Delete functions.
+    $(document).ready(function() {
+        // Fetch and populate users data, initialize DataTables...
+    
+        // Delete button click handler
+        $('#datatables').on('click', '.remove', function() {
+            var userId = $(this).closest('tr').find('td:nth-child(1)').text(); // Assuming the first column is user ID
+            var row = $(this).closest('tr');
+    
+            swal({
+                title: "Tem certeza?",
+                text: "Após deletar, não será possível recuperar os dados do usuário!",
+                icon: "warning",
+                buttons: true,
+                dangerMode: true,
+            })
+            .then((willDelete) => {
+                if (willDelete) {
+                    deleteUser(userId, row);
+                }
+            });
+        });
+    });
+    
+    function deleteUser(userId, row) {
+        $.ajax({
+            url: '/admin_users/users/' + userId,  // Adjust to your DELETE user endpoint
+            type: 'DELETE',
+            success: function(result) {
+                // On success, remove the row from the table
+                swal("Poof! Usuário excluído!", {
+                    icon: "success",
+                });
+                // Directly remove the row if not refreshing the entire table
+                $('#datatables').DataTable().row(row).remove().draw();
+            },
+            error: function(xhr, status, error) {
+                // Handle error
+                swal("Erro ao excluir o Usuário!", "Tente novamente mais tarde.", "error");
+            }
+        });
+    }
+    
+</script>
+
 {% endblock %}

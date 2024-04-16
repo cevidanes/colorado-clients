@@ -51,38 +51,6 @@ def index():
 def indexx():
      return render_template('dashboard.html', title='Home Page')
 
-@app.route('/users', methods=['GET', 'POST'])
-@login_required
-def handle_users():
-    if request.method == 'GET':
-        users = CPUser.query.all()
-        users_list = [{"id": user.id, "username": user.username, "email": user.email} for user in users]  # Customize based on your model
-        return jsonify(users_list)
-
-    elif request.method == 'POST':
-        data = request.get_json()
-        if not data or not 'username' in data or not 'email' in data or not 'password' in data:
-            abort(400)  # Missing information
-        user = CPUser(username=data['username'], email=data['email'])
-        # Set additional fields and handle password setting appropriately
-        db.session.add(user)
-        db.session.commit()
-        return jsonify({"success": True, "message": "User created successfully"}), 201
-
-@app.route('/users/<int:user_id>', methods=['PUT'])
-@login_required
-def update_user(user_id):
-    user = CPUser.query.get_or_404(user_id)
-    data = request.get_json()
-
-    if 'username' in data:
-        user.username = data['username']
-    if 'email' in data:
-        user.email = data['email']
-    # Update additional fields as necessary
-
-    db.session.commit()
-    return jsonify({"success": True, "message": "User updated successfully"})
 
 if __name__ == '__main__':
     with app.app_context():
