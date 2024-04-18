@@ -7,22 +7,24 @@ from dotenv import load_dotenv
 # Import Form Objects
 from forms.forms import RegistrationForm, LoginForm
 # Import db Models Objects
-from models.models import CPUser
+from models.users.users import CPUser
 # Import authentication module
 from authentication.auth import auth
 from admin_users.admin_users import admin_users
+from contracts.contracts import contracts
 import os
 import json
 
 load_dotenv()
 
 # Import db instance and models
-from extensions import db
+from utilities.extensions import db
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('FLASK_APP_SECRET_KEY', 'fallback_secret_key') #ToDo:create secret key inside docker configuration
 app.register_blueprint(auth, url_prefix='/auth')
 app.register_blueprint(admin_users, url_prefix='/admin_users')
+app.register_blueprint(contracts, url_prefix='/contracts')
 # Initialize Flask-Login
 login_manager = LoginManager(app)
 login_manager.login_view = 'auth.login'  # The name of the view to redirect to when the user needs to log in.

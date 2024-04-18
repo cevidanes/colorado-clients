@@ -3,9 +3,9 @@ from flask import Blueprint, render_template,abort,jsonify,request
 from flask_login import current_user, login_required
 from sqlalchemy.exc import IntegrityError
 # Import db Models Objects
-from models.models import CPUser
+from models.users.users import CPUser
 # Import db instance and models
-from extensions import db
+from utilities.extensions import db
 
 admin_users = Blueprint('admin_users', __name__, template_folder='templates')
 
