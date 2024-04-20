@@ -45,10 +45,10 @@ class CPContractStage(db.Model):
     tipo = db.Column(db.Integer)
     contract_code = db.Column(db.String(255))
     parcelas = db.Column(db.String(255))
-    lote = db.Column(db.String(255))
+    unidades = db.Column(db.String(255))
     load_file_name = db.Column(db.String(255))
     empreendimento = db.Column(db.String(255))
-    doc = db.Column(db.BigInteger)
+    doc = db.Column(db.String)
     development_site_id = db.Column(db.Integer)
     import_id = db.Column(db.Integer)
     

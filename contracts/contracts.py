@@ -1,43 +1,118 @@
 from flask import Flask, request, jsonify, Blueprint, render_template
 from flask_sqlalchemy import SQLAlchemy
-import pandas as pd
 from datetime import datetime
 from utilities.extensions import db
 from models.contracts.contracts import CPContractStage, CPContractsImport,CPContract
 from models.clients.clients import CPClientStage, CPClient
+import traceback
 
 contracts = Blueprint('contracts', __name__, template_folder='templates')
 
+from openpyxl import load_workbook
+from flask import jsonify
+
+def read_excel_nexus(sheet):
+    # Data starts at row 7
+    contracts = []
+    current_contract = None
+        
+    for row in sheet.iter_rows(min_row=7, values_only=True):
+            contract_id = "N" + str(row[0])
+            name = row[1]
+            cpf = row[4]
+            unidades = row[2]
+            if name is not None and not isinstance(name,int): 
+                if (len(contract_id) > 1 and contract_id !="NNone") and name != "NOME":  # New contract or additional clients under current contract
+                    if current_contract is None or (current_contract['contrato'] != contract_id):
+                        # Start a new contract record
+                        contracts_cpf =[]
+                        current_contract = {
+                            'contrato': contract_id,
+                            'clientes': [],
+                            'unidades': ''
+                        }
+                        
+                    # Create a unique identifier for each client
+                    if cpf not in contracts_cpf:
+                        current_contract['clientes'].append({'nome': name, 'cpf': cpf})
+                        contracts_cpf.append(cpf)
+                
+                if "UNIDADES:" in name:  # End of a contract
+                    if current_contract:  # There should always be a current contract
+                        current_contract['unidades'] = unidades
+                        contracts.append(current_contract)
+                        current_contract = None  # Reset for safety, although should end processing        
+    return contracts
+
+def read_excel_mega(sheet):
+    # Data starts at row 7
+    contracts = []
+    current_contract = None
+    contracts_cpf =[]
+    contract_id=None
+    name=None
+    for row in sheet.iter_rows(min_row=4, values_only=True):
+        cpf = 0
+        if isinstance(row[4],int) or 'Participante' in str(row[0]):
+            if ("M" + str(row[4]) != contract_id) and str(row[4]) !='None':
+                contracts.append(current_contract)
+                current_contract = None
+                contract_id = "M" + str(row[4])
+                contracts_cpf =[]
+                current_contract = {
+                'contrato': contract_id,
+                'clientes': []            
+                }
+            
+            try:
+                int(row[1].replace('0',''))
+                name = row[2]
+            except Exception as e:
+                name = row[1]
+            
+        if 'CPF' in str(row[0]) or 'CNPJ' in str(row[0]):
+            cpf = row[1]
+            if cpf not in contracts_cpf:
+                current_contract['clientes'].append({'nome': name, 'cpf': cpf})
+                contracts_cpf.append(cpf)
+        
+        #Trick to debug for a line
+        #if '35001' in contract_id: 
+        #    print(row)
+        #    print(contract_id,name,cpf, current_contract)
+        #    input()
+        #print(contracts)
+        
+    contracts.pop(0)
+    return contracts
+
 def read_excel_file(file):
     """
-    Reads an Excel file and returns a pandas DataFrame.
+    Reads an Excel file and processes the data based on specific business rules.
 
     Args:
-    file (FileStorage): The Excel file to read.
+    file (str): Path to the Excel file to read.
 
     Returns:
-    DataFrame: A pandas DataFrame containing the data from the Excel file.
+    list of dicts: Extracted and processed data from the Excel file.
     Error: An error message if the file is invalid.
     """
-    try:
-            df = pd.read_excel(file, engine='openpyxl')
-            df.columns = ['contract', 'name', 'C', 'D', 'doc', 'F', 'G', 'H', 'email', 'J', 'K', 'L']
-            df['contract'] = pd.to_numeric(df['contract'], errors='coerce')
-            new_df = df[df['contract'].notna()]
-            new_df = new_df.drop_duplicates()
-            new_df['unidades'] = None   
-        
-            for value in new_df['doc'].unique():
-                last_index = new_df[new_df['doc'] == value].index[-1]
-                if last_index + 1 in df.index:
-                    new_df.loc[new_df['doc'] == value, 'unidades'] = df.loc[last_index + 1, 'doc']
-            
-            unique_df = new_df.drop_duplicates(subset=['contract','name', 'doc', 'unidades'])
-            
-            return unique_df, "Nexus"
-    except Exception as e:
-        return jsonify({"error": "Arquivo inválido!"}), 401
-
+    #try:
+    workbook = load_workbook(filename=file)
+    sheet = workbook.active
+    # Header starts at row 6
+    headers_nexus = [cell.value for cell in sheet[6]]
+    header_mega = [cell.value for cell in sheet[1]]
+    
+    if 'CÓDIGO' in headers_nexus[0]:
+        return read_excel_nexus(sheet)
+    
+    if 'Unidade' in header_mega:
+        return read_excel_mega(sheet)
+    
+    #except Exception as e:
+    #    return jsonify({"error": "Arquivo inválido!"}), 401
+ 
 def create_import_control_row(file):
     """
     Creates an import control row for the given file.
@@ -73,134 +148,48 @@ def create_import_control_row(file):
         # Return an error message if an exception is raised
         return {"error": "Error ao criar o registro de Controle para importação contate o Administrador" + str(e)}, 500
 
-def create_clients_row(client_data, import_control, df_type):
+def insert_contract_data(list_contracts, import_control):
     """
     Creates clients and contracts in Stage Table.
 
     Args:
-    file (str): The name of the file.
+    list_contracts (list of dicts): The data of clients to process.
+    import_control (CPContractsImport): The import control row.
 
     Returns:
-    CPContractsImport: The import control row.
+    bool: True if processing was successful, False otherwise.
     Error: An error message if cpf is invalid.
     """
+
     total_clients_imported = 0
-    total_clients_for_update = 0
-    total_clients_for_insert = 0
-   
-    #try:
-    unique_client_df = client_data.drop_duplicates(subset=['name', 'doc'])
-
-    for index, row in unique_client_df.iterrows():
-            # Check if a record exists with the same file_name, cpf_cnpj, and name for this client
-            try:
-                clear_cpf_cnpj = int(row['doc'].replace('.','').replace('-','').replace('/',''))
-            except Exception as e:
-                db.session.rollback()
-                import_control.status = "Error"
-                db.session.commit()
-                return jsonify({"error": "CPF/CNPJ inválido! Contrato: " + row['contract']}), 500
-                                
-            current_client = db.session.query(CPClient).filter(CPClient.name == row['name'], CPClient.cpf_cnpj == clear_cpf_cnpj).first()
+    try:
+        for contract in list_contracts:
+            contract_stage = CPContractStage(
+                contract_code=contract['contrato'],
+                unidades=contract.get('unidades'),
+            )
+            db.session.add(contract_stage)
             
-            # Create and add a new record for Clients Stage Table, If Client is already in the main table it will be add the current client id
-            if current_client:
-                total_clients_for_update=total_clients_for_update+1
+            for client in contract['clientes']:                
                 client_stage = CPClientStage(
-                    name=row['name'],
-                    cpf_cnpj=clear_cpf_cnpj,
-                    client_id = current_client.id,
-                    import_id = import_control.id
+                    name=client['nome'],
+                    cpf_cnpj=client['cpf'],
+                    import_id=import_control.id
                 )
-            else:
-                total_clients_for_insert=total_clients_for_insert+1
-                client_stage = CPClientStage(
-                    name=row['name'],
-                    cpf_cnpj=clear_cpf_cnpj,
-                    import_id = import_control.id
-                )
-            
-            db.session.add(client_stage)
-            total_clients_imported= total_clients_imported+1
-    import_control.total_clients_imported = total_clients_imported
-    import_control.total_clients_for_update = total_clients_for_update
-    import_control.total_clients_for_insert = total_clients_for_insert
-    db.session.commit()
-    
-    return True
-    #except Exception as e:
-     #   db.session.rollback()
-    #    return jsonify({"Error": "Erro ao inserir os Clientes. Contate o Administrador." + str(e)}), 400
-     
 
-def create_contracts_row(contract_data, import_control, df_type):
-    """
-    Creates contracts in Stage Table.
+            db.session.add(client_stage) #ToDo: Check if it will increase the total sessions in the database.
+            total_clients_imported += 1
 
-    Args:
-    contract_data (DataFrame): The contract data.
-    import_control (CPContractsImport): The import control row.
-    df_type (str): The type of the DataFrame.
+        import_control.total_clients_imported = total_clients_imported
+        db.session.commit()
 
-    Returns:
-    Response: A response indicating whether the contracts were added successfully or not.
-    """
-    total_contracts_imported = 0
-    total_contracts_for_update = 0
-    total_contracts_for_insert = 0
-    if df_type =="Nexus":
-        try:
-            unique_contract_df = contract_data.drop_duplicates(subset=['contract', 'name', 'doc','unidades'])
-            for index, row in unique_contract_df.iterrows():
-                # Check if a record exists with the same file_name, cpf_cnpj, and name for this client
-                try:
-                    clear_cpf_cnpj = int(row['doc'].replace('.','').replace('-','').replace('/',''))
-                except Exception as e:
-                    db.session.rollback()
-                    import_control.status = "Error"
-                    db.session.commit()
-                    return jsonify({"error": "CPF/CNPJ inválido! Contrato: " + row['contract']}), 500
-                
-                contract_code = "N" + str(int(row['contract']))
-                # Check if a record exists with the same file_name, contract, and name for this contract
-                current_contract = db.session.query(CPContract).filter(CPContract.contract_code == contract_code, CPContract.cpf_cnpj == clear_cpf_cnpj).first()
-
-                # Create and add a new record for Contracts Stage Table, If Contract is already in the main table it will be add the current contract id
-                if current_contract:
-                    total_contracts_for_update = total_contracts_for_update + 1
-                    contract_stage = CPContractStage(
-                        contract_code=contract_code,
-                        doc=clear_cpf_cnpj,
-                        contract_id=current_contract.id,
-                        import_id=import_control.id,
-                        lote=row['unidades']
-                        
-                    )
-                else:
-                    total_contracts_for_insert = total_contracts_for_insert + 1
-                    contract_stage = CPContractStage(
-                        contract_code=contract_code,
-                        doc=clear_cpf_cnpj,
-                        import_id=import_control.id,
-                        lote=row['unidades']
-                    )
-
-                db.session.add(contract_stage)
-                total_contracts_imported = total_contracts_imported + 1
-            
-            import_control.total_contracts_imported = total_contracts_imported
-            import_control.total_contracts_for_update = total_contracts_for_update
-            import_control.total_contracts_for_insert = total_contracts_for_insert
-            db.session.commit()
-
-            return True
-        except Exception as e:
-            db.session.rollback()
-            return jsonify({"Error": "Erro ao inserir os Contratos. Contate o Administrador." + str(e)}), 400
-    else:
+        return True
+    except Exception as e:
+        print(e)
         db.session.rollback()
-        return jsonify({"Error": "Planilha não suportada. Contate o Administrador."}), 400
-        
+        error_message = "Erro ao inserir os Clientes. Contate o Administrador. " + str(e) + "\n" + traceback.format_exc()
+        return jsonify({"Error": error_message}), 400
+
 @contracts.route('/upload', methods=['POST'])
 def upload_file():
     # Check if the post request has the file part
@@ -208,43 +197,29 @@ def upload_file():
         return jsonify({"error": "Envie ao menos um arquivo."}), 400
         
     file = request.files['file']
-    try:
-        # Read the Excel file
-        dfContracts, df_type = read_excel_file(file)
-        
-        #check if excel is loaded
-        if isinstance(dfContracts, tuple):
-            return dfContracts
     
-        #Create import control row for the sended file
-        import_control = create_import_control_row(file)
+    import_control = create_import_control_row(file)
         
-        #check if excel is loaded
-        if isinstance(import_control, tuple):
-            return import_control
-   
-        #import clients
-        create_clients = create_clients_row(dfContracts, import_control, df_type)
-        #check if excel is loaded
-        if isinstance(create_clients, tuple):
-            return create_clients
-        
-        #import contracts
-        create_contracts = create_contracts_row(dfContracts, import_control, df_type)
-        
-        #check if excel is loaded
-        if isinstance(create_contracts, tuple):
-            return create_contracts
-
-        import_control.status="Pronto para Importar"
-        db.session.commit()
-        return jsonify({"success": True, "message": "Imported to Stage finish"}), 201
-
-    except Exception as e:
-        db.session.rollback()
-        #import_control.status = "Error"
-        #db.session.commit()
-        return jsonify({"error": str(e)}), 500
+    #check if import control is ok.
+    if isinstance(import_control, tuple):
+        return import_control
+    
+    list_contracts = read_excel_file(file)
+    #check if excel is loaded
+    print(list_contracts[1])
+    if not list_contracts[0].get('clientes'):
+        return list_contracts
+    
+    #import contracts
+    create_contracts = insert_contract_data(list_contracts, import_control)
+    
+    #check if excel is loaded
+    if isinstance(create_contracts, tuple):
+        return list_contracts
+    
+    import_control.status="Pronto para Importar"
+    db.session.commit()
+    return jsonify({"success": True, "message": "Imported to Stage finish"}), 201
 
 @contracts.route('/home')
 def home():
