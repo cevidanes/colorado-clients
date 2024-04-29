@@ -10,6 +10,7 @@ class CPClient(db.Model):
     updated_by = db.Column(db.Integer)
     name = db.Column(db.String(255))
     cpf_cnpj = db.Column(db.String)
+    contract_code = db.Column(db.String)
     user_id = db.Column(db.Integer, db.ForeignKey('cp_users.id'))
     
 class CPClientStage(db.Model):
@@ -20,5 +21,6 @@ class CPClientStage(db.Model):
     updated_by = db.Column(db.Integer)
     name = db.Column(db.String(255))
     cpf_cnpj = db.Column(db.String)
+    contract_code = db.Column(db.String)
     import_id = db.Column(db.Integer, db.ForeignKey('cp_contracts_import.id'))
     client_id = db.Column(db.Integer, db.ForeignKey('cp_users.id'))
