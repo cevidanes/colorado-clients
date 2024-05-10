@@ -35,6 +35,8 @@ class CPContractsImport(db.Model):
     total_contracts_for_update = db.Column(db.Integer, default=0)
     status = db.Column(db.String, default="Pendente")
 
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 class CPContractStage(db.Model):
     __tablename__ = 'cp_contracts_stage'
@@ -51,6 +53,9 @@ class CPContractStage(db.Model):
     doc = db.Column(db.String)
     development_site_id = db.Column(db.Integer)
     import_id = db.Column(db.Integer)
+    
+    def to_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
     
 class CPDevelopmentSite(db.Model):
     __tablename__ = 'cp_development_sites'

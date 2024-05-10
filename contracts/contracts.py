@@ -1,8 +1,11 @@
-from flask import Flask, request, jsonify, Blueprint, render_template
+from flask import Flask, request, jsonify, Blueprint, render_template, abort
+from flask_login import current_user, login_required
 import traceback
 from utilities.extensions import db
 from models.contracts.contracts import CPContractStage, CPContractsImport,CPContract
 from models.clients.clients import CPClientStage, CPClient
+from functools import wraps
+
 
 DEVMODE=True
 contracts = Blueprint('contracts', __name__, template_folder='templates')
@@ -57,7 +60,38 @@ def process_row_mega(row, current_contract, contracts, contracts_cpf):
             contracts_cpf.append(cpf)
             
     return current_contract, contracts, contracts_cpf
-  
+
+def process_row_uau(row, current_contract, contracts, contracts_cpf):
+    if isinstance(row[16], int) and row[14] and 'Código' in row[14]:
+        contract_id = "U" + str(row[16])
+        if contract_id != current_contract and str(row[16]) != 'None':
+            contracts.append(current_contract)
+            contracts_cpf = []
+            current_contract = {
+                'contrato': contract_id,
+                'unidades' : '',
+                'clientes': []
+            }
+            
+        if row[0] and 'Cliente' in row[0]:
+            name = row[3] 
+            client = {'nome': name}
+            current_contract['clientes'].append(client)
+        
+    if row[0] and 'CPF' in str(row[0]) or 'CNPJ' in str(row[0]):
+        cpf = row[3]
+        if cpf and cpf not in contracts_cpf:
+            current_contract['clientes'][0]['cpf']=cpf
+            contracts_cpf.append(cpf)
+    
+    if  row[3] and 'VENDA' in row[3]:
+        if not current_contract.get('unidades'):
+            current_contract['unidades'] = f"{str(row[6])} - {str(row[7])}"
+        else:
+            current_contract['unidades'] =  current_contract['unidades'] + f" - {str(row[6])} - {str(row[7])}"
+            
+    return current_contract, contracts, contracts_cpf
+
 def read_excel_nexus(sheet):
     contracts, current_contract, contracts_cpf = [], None, []
     
@@ -71,23 +105,33 @@ def read_excel_mega(sheet):
         current_contract, contracts, contracts_cpf = process_row_mega(row, current_contract, contracts, contracts_cpf)
     return contracts
 
+def read_excel_uau(sheet):
+    contracts, current_contract, contracts_cpf = [], None, []
+    for row in sheet.iter_rows(min_row=6, values_only=True):
+        current_contract, contracts, contracts_cpf = process_row_uau(row, current_contract, contracts, contracts_cpf)
+        
+    return contracts
+
 def read_excel_file(file):
     #function to read excel file
     workbook = load_workbook(filename=file)
     sheet = workbook.active
 
     #for nexus workbook it will be start at row 6
-    headers_nexus = [cell.value for cell in sheet[6]]
+    headers_nexus_uau = [cell.value for cell in sheet[6]]
 
     #for mega workbook it will be start at row 1
     header_mega = [cell.value for cell in sheet[1]]
-    
     #check if its NEXUS.
-    if 'CÓDIGO' in headers_nexus[0]:
+    if 'CÓDIGO' in headers_nexus_uau[0]:
         return read_excel_nexus(sheet)
     #check if its MEGA.
     if 'Unidade' in header_mega:
         return read_excel_mega(sheet)
+    #check if its UAU.
+    if 'Cliente' in headers_nexus_uau[0]:
+        return read_excel_uau(sheet)
+    
     
     return jsonify({"error": "Arquivo inválido!"}), 401
 
@@ -144,7 +188,6 @@ def insert_contract_data(list_contracts, import_control):
  
     try:
         for contract in list_contracts:
-            print(contract)
             create_records_for_each_contract(contract, import_control)
         
         import_control.total_clients_imported = len(list_contracts)
@@ -191,6 +234,7 @@ def upload_file():
         return import_control
 
     list_contracts = read_excel_file(file)
+
     if not has_clients_in_contracts(list_contracts):
         return list_contracts
 
@@ -199,7 +243,7 @@ def upload_file():
         return list_contracts
 
     mark_import_control_ready(import_control)
-    return jsonify({"success": True, "message": "Imported to Stage finish"}), 201
+    return jsonify({"success": True, "message": "Imported to Stage finish"}), 200
 
 
 def is_successful_import_control(import_control):
@@ -221,3 +265,15 @@ def mark_import_control_ready(import_control):
 @contracts.route('/home')
 def home():
     return render_template('contracts/home.html')
+
+@contracts.route('/importList')
+def import_contract():
+    data = db.session.query(CPContractsImport).all()
+    count = len(data)
+    return render_template('contracts/home_import_list.html', count=count, data=data)
+
+@contracts.route('/importProcessStep0')
+def import_process_step0():
+    data = db.session.query(CPContractsImport).all()
+    count = len(data)
+    return render_template('contracts/import_process_view0.html', count=count, data=data)

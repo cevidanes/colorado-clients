@@ -47,3 +47,18 @@ The boletos management system is a comprehensive web and mobile platform designe
    - Final users can securely log out of the platform, ensuring their information remains protected.
 
 This detailed description and user flows outline the primary functionalities and interactions within the boletos management system, emphasizing efficient management for backoffice users and straightforward access for final users to their boletos.
+
+#HOT TODO: Apos clicar em enviar o arquivo, adicionar trocar o botao enviar por load para evitar duplo clique
+#TODO: Apos clicar no botao exibir uma mensagem de sucesso ou erro (utilizar o retorno da api)
+#TODO: transformar a importacao em uma funcao,
+#TODO: separar a rota chamada pelo form em outra funcao.
+#TODO: Adicionar acao ao botao concluir e direcionar ao step 0 da importacao.
+
+#TODO: Ao exibir o cliente, indicar o numero de contratos daquele client na importacao.
+#TODO: Ao clicar no contrato devem ser exibidos todos os detalhes do contrato. Indicar o CRM origiem.
+#TODO: Mapa interativo *DATA DO COLORADO DO COLORADO PRA SABER A DATA DO MAPA*
+#TODO: Validar se o Carne esta disponivel no OneDrive.
+#TODO: Validar se e possivel exibir somente o mes corrente ao cliente solicitar o boleto.
+#TODO: Pensar nos Leads
+#TODO: Explorar o PIX.
+#TODO: FAQ interno colorado.

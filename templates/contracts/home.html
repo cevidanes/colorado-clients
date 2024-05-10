@@ -75,16 +75,16 @@
 <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
 <script>
-    // Start for DataTables Script User.
+    // Start for DataTables contracts stage data data
     $(document).ready(function() {
-        // Fetch users data
-        $.getJSON('/admin_users/users', function(users) {
+        // Fetch contracts stage data data
+        $.getJSON('/contracts/stage', function(contractsStage) {
             var tableBody = $('#datatables tbody');
-            users.forEach(function(user) {
+            contractsStage.forEach(function(contractsStage) {
                 var row = $('<tr>');
-                row.append($('<td>').text(user.id));
-                row.append($('<td>').text(user.username));
-                row.append($('<td>').text(user.email));
+                row.append($('<td>').text(contractsStage.id));
+                row.append($('<td>').text(contractsStage.username));
+                row.append($('<td>').text(contractsStage.email));
                 row.append($('<td class="text-right">').html('<a href="#" class="btn btn-link btn-info like"><i class="fa fa-heart"></i></a>' +
                                                               '<a href="#" class="btn btn-link btn-warning edit"><i class="fa fa-edit"></i></a>' +
                                                               '<a href="#" class="btn btn-link btn-danger remove"><i class="fa fa-times"></i></a>'));

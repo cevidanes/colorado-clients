@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %} 
+Imports List Detail Dashboard
+{% endblock %}
+
+{% block content %}
+<div class="content container-fluid">
+    <div class="row">
+        <div class="col-lg-3 col-sm-6">
+            <div class="card card-stats">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="nc-icon nc-chart text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="col-7">
+                            <div class="numbers">
+                                <p class="card-category">Number</p>
+                                <h4 class="card-title">150GB</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer ">
+                    <hr>
+                    <div class="stats">
+                        <i class="fa fa-refresh"></i> Update Now
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card card-stats">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="nc-icon nc-light-3 text-success"></i>
+                            </div>
+                        </div>
+                        <div class="col-7">
+                            <div class="numbers">
+                                <p class="card-category">Revenue</p>
+                                <h4 class="card-title">$ 1,345</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer ">
+                    <hr>
+                    <div class="stats">
+                        <i class="fa fa-calendar-o"></i> Last day
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card card-stats">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="nc-icon nc-vector text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="col-7">
+                            <div class="numbers">
+                                <p class="card-category">Errors</p>
+                                <h4 class="card-title">23</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer ">
+                    <hr>
+                    <div class="stats">
+                        <i class="fa fa-clock-o"></i> In the last hour
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card card-stats">
+                <div class="card-body ">
+                    <div class="row">
+                        <div class="col-5">
+                            <div class="icon-big text-center icon-warning">
+                                <i class="nc-icon nc-favourite-28 text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="col-7">
+                            <div class="numbers">
+                                <p class="card-category">Followers</p>
+                                <h4 class="card-title">+45K</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer ">
+                    <hr>
+                    <div class="stats">
+                        <i class="fa fa-refresh"></i> Update now
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body table-full-width table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>File Name</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                                <th>Updated At</th>
+                                <th>Updated By</th>
+                            </tr>
+                        </thead>
+                        <tbody id="importData">
+                            {% for item in data %}
+                            <tr>
+                                <td>{{ item.id }}</td>
+                                <td>{{ item.file_name }}</td>
+                                <td>{{ item.status }}</td>
+                                <td>{{ item.created_at }}</td>
+                                <td>{{ item.updated_at }}</td>
+                                <td>{{ item.updated_by }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="sendFileModel" tabindex="-1" role="dialog" aria-labelledby="sendFileModelLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sendFileModelLabel">Iniciar Importação</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadForm" method="POST" enctype="multipart/form-data" action="/contracts/upload">
+                        <div class="form-group">
+                            <input type="file" class="form-control-file" id="file" name="file">
+                        </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Sair</button>
+                    <button type="submit" class="btn btn-primary" form="uploadForm">Enviar</button>
+                </div>
+                    </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- You can put your custom scripts here if any -->
+{% endblock %}
